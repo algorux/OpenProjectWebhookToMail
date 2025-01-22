@@ -42,21 +42,22 @@ public class sendMail extends EmailService {
                 HashMap status = (HashMap)embedded.get("status");
                 HashMap type = (HashMap)embedded.get("type");
                 HashMap priority = (HashMap)embedded.get("priority");
+                String createdAt = data.get("createdAt").toString();
                 HashMap project = (HashMap)embedded.get("project");
                 HashMap links = (HashMap)data.get("_links");
                 HashMap description = (HashMap)data.get("description");
                 String desc_html = description.get("html").toString();
                 if (desc_html.indexOf("*****") != -1)
                     desc_html = desc_html.substring(0,desc_html.indexOf("*****")) + "</p>";
-                HashMap customfield6 = (HashMap)links.get("customField6"); //Ubicacion
-                HashMap customfield7 = (HashMap)links.get("customField7"); // Id del bien
-                HashMap customfield3 = (HashMap)links.get("customField3"); // Solicitante
-                HashMap customField9 = (HashMap)links.get("customField9"); // Id del bien 2
+                //HashMap customfield6 = (HashMap)links.get("customField6"); //Ubicacion
+                //HashMap customfield7 = (HashMap)links.get("customField7"); // Id del bien
+                //HashMap customfield3 = (HashMap)links.get("customField3"); // Solicitante
+                //HashMap customField9 = (HashMap)links.get("customField9"); // Id del bien 2
                 String email_solicitante = "";
                 String direccion = "";
                 String bien = "";
                 List<String> mailto = new ArrayList<>();
-                if (customfield6 != null && customfield6.get("title") != null)
+                /*if (customfield6 != null && customfield6.get("title") != null)
                     direccion = customfield6.get("title").toString();
                 if (customfield7 != null && customfield7.get("title") != null)
                     bien = customfield7.get("title").toString();
@@ -69,16 +70,20 @@ public class sendMail extends EmailService {
                         if (validateEmail(solicitanteFields[1]))
                             mailto.add(solicitanteFields[1]);
                     }
-                }
+                }*/
                 String project_name = project.get("identifier").toString();
                 String package_id = data.get("id").toString();
                 DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
                 LocalDateTime now = LocalDateTime.now();
                 String up_date = "";
                 String status_name = status.get("name").toString();
-                if (status_name.equals("Cierre")) {
-                    up_date = "Fecha de cierre: " + dtf.format(now);
-                } else if (status_name.equals("Apertura")) {
+                String str = createdAt;
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+                LocalDateTime dateTime = LocalDateTime.parse(str, formatter);
+                dateTime = dateTime.minusHours(6);
+                if (status_name.equals("Cerrado")) {
+                    up_date = "Fecha de cierre: " + dtf.format(now) +", Fecha de apertura: " + dtf.format(dateTime);
+                } else if (status_name.equals("Nuevo")) {
                     up_date = "Ticket creado: " + dtf.format(now);
                 } else {
                     up_date = "Ticket actualizado: " + dtf.format(now);
@@ -89,16 +94,18 @@ public class sendMail extends EmailService {
                 if (assignee != null)
                     mailto.add(assignee.get("email").toString());
                 String ticketNo = package_id;
+
                 if (!desc_html.equals("")) {
                     try {
                         sendNewHTMLmail(mailto.<String>toArray(new String[0]), "Ticket numero: " + ticketNo + " Estado: " + status_name,
-                                "<br> Prioridad: " + priority.get("name").toString() +
+                                "<br> Numero de ticket: " + ticketNo +
+                                        "<br> Prioridad: " + priority.get("name").toString() +
                                         "<br> Creado por: " + author.get("name").toString() +
-                                        "<br> Dirección" + direccion +
+                                        "<br> Dirección: " + direccion +
                                         "<br> Id y Desc del bien: " + bien + "<br> " +
                                         "<br>" +
                                         up_date +
-                                        "<br> Puede ver los detalles en el siguiente enlace: " + serverHost + "projects/" + project_name + "/work_packages/" + package_id + "/activity"+
+                                        //"<br> Puede ver los detalles en el siguiente enlace: " + serverHost + "projects/" + project_name + "/work_packages/" + package_id + "/activity"+
                                         "<br>" +desc_html
 
 
@@ -108,15 +115,18 @@ public class sendMail extends EmailService {
                     }
                 } else {
                     sendNewMail(mailto.<String>toArray(new String[0]), "Ticket numero: " + ticketNo + " Estado: " + status_name,
-                            "\n Prioridad: " + priority.get("name").toString() +
+
+                                    "\n Numero de ticket: " + ticketNo +
+                                            "\n Prioridad: " + priority.get("name").toString() +
                                     "\n Creado por: " + author.get("name").toString() +
                                     "\n Dirección:" + direccion +
                                     "\n Id y Desc del bien: " + bien +
-                                    "\n" + up_date +
-                                    "\n Puede ver los detalles en el siguiente enlace: " + serverHost + "projects/" + project_name + "/work_packages/" + package_id + "/activity"
+                                    "\n" + up_date
+                                    //+"\n Puede ver los detalles en el siguiente enlace: " + serverHost + "projects/" + project_name + "/work_packages/" + package_id + "/activity"
                     );
                 }
-                this.logger.info("Email enviado a:" + mailto);
+
+                this.logger.info("Email enviado:" + mailto);
             } else {
                 this.logger.info("llave: {}, valor: {}", llave, datos.get(llave));
             }
